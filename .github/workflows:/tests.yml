@@ -1,0 +1,116 @@
+name: Tests
+on:
+  push:
+  
+jobs:
+  run_pytest:
+    permissions: write-all
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+
+      - name: Poetry Install
+        # You may pin to the exact commit or the version.
+        # uses: knowsuchagency/poetry-install@7ed80d49910319d3e14ac262a5c81f681de48de0
+        uses: knowsuchagency/poetry-install@v2
+        
+      - name: Install dependencies 
+        run: poetry install
+        
+      - name: Perform pytests under coverage
+        shell: pwsh
+        run: poetry run coverage run -m pytest
+
+      - name: coverage.py badge
+        uses: tj-actions/coverage-badge-py@v2.0.3
+          
+      - name: Verify Changed files
+        uses: tj-actions/verify-changed-files@v16
+        id: verify-changed-files
+        with:
+          files: coverage.svg
+
+      - name: Commit files
+        if: steps.verify-changed-files.outputs.files_changed == 'true'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add coverage.svg
+          git commit -m "Updated coverage.svg"
+
+      - name: Push changes
+        if: steps.verify-changed-files.outputs.files_changed == 'true'
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.github_token }}
+          branch: ${{ github.ref }}
+
+  run_pylint:
+    permissions: write-all
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+
+      - name: PyLint with dynamic badge
+        # You may pin to the exact commit or the version.
+        # uses: Silleellie/pylint-github-action@544decdece6dfa79a2ae5dde29dd1739900f73eb
+        uses: Silleellie/pylint-github-action@v1
+        with:
+          # The path, relative to the root of the repo, of the package(s) to lint
+          package-path: ./sim_based_cs
+          # Python version which will install all dependencies and lint package(s)
+          python-version: '>=3.8.0'
+          # The path, relative to the root of the repo, of the requirements to install
+          requirements-path: requirements.txt
+          # The path, relative to the root of the repo, of the README.md to update with the pylint badge
+          readme-path: README.md # optional, default is README.md
+
+  Quality:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out repository code
+      uses: actions/checkout@v4
+        
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3.11
+
+    - name: Poetry Install
+      # You may pin to the exact commit or the version.
+      # uses: knowsuchagency/poetry-install@7ed80d49910319d3e14ac262a5c81f681de48de0
+      uses: knowsuchagency/poetry-install@v2
+      
+    - name: Install dependencies 
+      run: poetry install
+
+    - name: Update poetry
+      run: poetry update
+    - name: Lint with flake8
+      run: |
+        # stop the build if there are Python syntax errors or undefined names
+        python -m poetry run flake8 . --exclude .venv --count --select=E9,F63,F7,F82 --show-source --statistics
+        # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
+        python -m poetry run flake8 . --exclude .venv --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+    - name: Test with pytest
+      run: |
+        python -m poetry run python -m pytest -v tests
+    
+  Release:
+    needs: Quality
+    # https://github.community/t/how-do-i-specify-job-dependency-running-in-another-workflow/16482
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master' && !contains(github.event.head_commit.message, 'chore(release):')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.11
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Semantic Release
+        run: |
+          pip install python-semantic-release
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          semantic-release publish
