@@ -52,7 +52,7 @@ jobs:
       - name: Run pylint
         run: |
           source .venv/bin/activate
-          poetry run pylint ./rp_poetry/functions.py ./tests
+          poetry run pylint ./sim_based_cs
       - name: pylint badge
         uses: Silleellie/pylint-github-action@v1
         with:
