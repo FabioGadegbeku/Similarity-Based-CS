@@ -1,0 +1,77 @@
+name: pylint
+
+on: push
+
+jobs:
+  pylint:
+    runs-on: ubuntu-latest
+    steps:
+      #----------------------------------------------
+      #       check-out repo and set-up python
+      #----------------------------------------------
+      - name: Check out repository
+        uses: actions/checkout@v3
+      - name: Set up python
+        id: setup-python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      #----------------------------------------------
+      #  -----  install & configure poetry  -----
+      #----------------------------------------------
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+          installer-parallel: true
+
+      #----------------------------------------------
+      #       load cached venv if cache exists
+      #----------------------------------------------
+      - name: Load cached venv
+        id: cached-poetry-dependencies
+        uses: actions/cache@v3
+        with:
+          path: .venv
+          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
+      #----------------------------------------------
+      # install dependencies if cache does not exist
+      #----------------------------------------------
+      - name: Install dependencies
+        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+        run: poetry install --no-interaction --no-root
+      #----------------------------------------------
+      # install your root project, if required
+      #----------------------------------------------
+      - name: Install project
+        run: poetry install --no-interaction
+      #----------------------------------------------
+      #              run pylint
+      #----------------------------------------------
+      - name: Run pylint
+        run: |
+          source .venv/bin/activate
+          poetry run pylint ./rp_poetry/functions.py ./tests
+      - name: pylint badge
+        uses: Silleellie/pylint-github-action@v1
+        with:
+              package-path: ./sim_based_cs
+              # Version of the Python interpreter which will install all requirements of your project 
+              # and lint the package(s) specified with the `package-path` argument
+              #
+              # Required
+              python-version: 3.11
+          
+              # Path of the requirements of your project, relative to the repository root. 
+              # This can be easily changed in case you have `requirements-dev.txt`
+              #
+              # Optional, Default: requirements.txt
+              requirements-path: requirements.txt
+              
+              # Path of the README.md to update with the pylint badge, relative to the repository root.
+              #
+              # Optional, Default: README.md
+              readme-path: README.md
+                
+  
