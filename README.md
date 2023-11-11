@@ -1,7 +1,7 @@
 # Similarity-Based-CS
 This project addresses the curse of dimensionality in feature selection methods, with a focus on supervised and semi-supervised learning. It introduces a novel constraint score that evaluates the relevance of feature subsets in a lower-dimensional subspace, taking into account correlations between features and avoiding high-dimensional original feature spaces.
 
-## Key Components:
+## Key Components :
 
 - Curse of Dimensionality: The project tackles the challenges associated with high-dimensional data and the impact on machine learning tasks.
 
@@ -14,3 +14,6 @@ This project addresses the curse of dimensionality in feature selection methods,
 - High-Dimensional Original Feature Space: Discusses the issues associated with working in high-dimensional spaces and its impact on similarity computation.
 
 - New Constraint Score: Introduces the primary focus of the project, which is the development of a novel constraint score that operates on feature subsets in a lower-dimensional subspace.
+
+## Code Quality :
+![Alt text](./coverage.svg)
