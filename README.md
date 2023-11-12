@@ -17,4 +17,4 @@ This project addresses the curse of dimensionality in feature selection methods,
 
 ## Code Quality :
 ![Alt text](./coverage.svg)
-![pylint](https://img.shields.io/badge/pylint-9.12-yellow?logo=python&logoColor=white)
+![pylint](https://img.shields.io/badge/pylint-10.00-brightgreen?logo=python&logoColor=white)
