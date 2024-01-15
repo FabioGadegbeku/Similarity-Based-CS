@@ -48,36 +48,49 @@ def get_constraints(x):
     return must_link, cannot_link
 
 
-## function that generates p constraints by setting n-p targets to NaN randomly and returns the target with n-p nan values
-def generate_constraints(x, p):
-    """ generates p constraints by setting n-p targets to NaN randomly and returns the target with n-p nan values
-    Args : x : data set with available labels
-              p : number of constraints
-    Returns : target : target with n-p nan values
+## function that makes only p labels available for each class
+def generate_constraints(X, p):
+    """Sets only p labels available for each class
+
+    Args:
+        X (2D numpy array ): numpy array containing the data set with available labels in the last column
+        p (int): number of labels to keep for each class
+
+    Returns:
+        X : numpy array containing the data set with only p labels available for each class
     """
-    target = x[:, -1]
 
-    # Randomly select n-p indices to set to nan
-    nan_indices = np.random.choice(target.size, target.size - p, replace=False)
+    #Get target column from X
+    target_column = X[:,-1]
 
-    # Set selected indices to nan
-    target = target.astype(np.float64)
-    target[nan_indices] = np.nan
+    # Get unique classes and their counts
+    unique_classes, class_counts = np.unique(target_column, return_counts=True)
 
-    return target
+    # Iterate over each class and set labels other than the top p to NaN
+    for class_label, count in zip(unique_classes, class_counts):
+        class_indices = target_column == class_label
 
+        if count > p:
+            top_p_indices = np.random.choice(np.where(class_indices)[0], size=p, replace=False)
+            # Use np.random.choice instead of sample for a NumPy array
 
-def constraint_score_1(x,target):
+            # Set labels other than the top p to NaN
+            X[class_indices & ~np.isin(np.arange(len(X)), top_p_indices), -1] = np.nan
+
+    return X
+
+def constraint_score_1(x):
     """Computes the constraint score 1 of a dataset
 
     Args:
-        x : data set without labels
-        target : available labels
+        x : data set with available labels
 
     Returns:
         constraint_score_1 : constraint score 1 of the data set
     """
     # Get the constraints
+    target = x[:, -1][np.newaxis].T
+    x = x[:, :-1]
     must_link, cannot_link = get_constraints(target)
 
     degree_matrix_must_link = np.diag(must_link.sum(axis=1))
@@ -96,6 +109,7 @@ def similarity_matrix_score(x,m):
 
     Args:
         x : data set with available labels
+        m : number of features to keep
 
     Returns:
         The similarity matrix score for each feature
@@ -124,9 +138,128 @@ def similarity_matrix_score(x,m):
 
     return similarity_matrix_score
 
+# def score_supervised(X):
+#     target = X[:,-1][np.newaxis].T
+#     X = X[:,:-1]
+#     must_link, cannot_link = get_constraints(target)
+#     similarity_matrix = rbf_kernel(X)
+#     similarity_matrix_supervised = np.zeros((len(target), len(target)))
+#     for j in range(len(target)):
+#         for k in range(len(target)):
+#             if must_link[j, k] == 1:
+#                 similarity_matrix_supervised[j, k] = 1
+#             if cannot_link[j, k] == 1:
+#                 similarity_matrix_supervised[j, k] = 0
+#             else:
+#                 similarity_matrix_supervised[j, k] = similarity_matrix[j, k]
+#     score = np.linalg.norm(similarity_matrix_supervised - similarity_matrix)
+#     return score
 
+def similarity_constraint_score(X,score,m):
+    """Creates a subset of features of size m that maximizes the similarity matrix score (Greedy Algorithm)
 
+    Args:
+        X (2D array): numpy array containing the data set with available labels in the last column
+        score (function): function to compute the similarity score of a data set supervied or semi-supervised
+        m ( int ): number of features to keep
 
-    # Compute the similarity matrix score for each feature with constraints
+    Returns:
+        int : The best subset of size m of features
+    """
+    target = X[:, -1][np.newaxis].T
+    X = X[:, :-1]
+    n = X.shape[1]
+    # Center and normalize the data
+    scaler = StandardScaler()
+    scaler.fit_transform(X)
+    selected_features = []
+    for j in range(m):
+        similarity_matrix_score =[]
+        if j == 0:
+            for i in range(n):
+                similarity_matrix_score.append(score(np.concatenate((X[:,i][np.newaxis].T,target), axis=1)))
+            feature_rank = np.argsort(similarity_matrix_score)
+            selected_features.append(feature_rank[0])
+            features = np.delete(X, feature_rank[1:], axis=1)
+        else :
+            for i in range(n):
+                if i not in selected_features:
+                    fi = np.concatenate((features,X[:,i][np.newaxis].T), axis=1)
+                    fi = np.concatenate((fi,target), axis=1)
+                    similarity_matrix_score.append(score(fi))
+                else:
+                    similarity_matrix_score.append(np.inf)
+            feature_rank = np.argsort(similarity_matrix_score)
+            selected_features.append(feature_rank[0])
+            features = np.concatenate((features,X[:,feature_rank[0]][np.newaxis].T), axis=1)
+    return selected_features
 
-    return list_similarity_matrix
+def score_supervised(X):
+    """Computes the supervised similarity score of a dataset
+
+    Args:
+        X (2D array): numpy array containing the data set with available labels in the last column
+
+    Returns:
+       float : The supervised similarity score of the data set
+    """
+    labels = X[:,-1][np.newaxis].T
+    X = X[:,:-1]
+    must_link, cannot_link = get_constraints(labels)
+    similarity_matrix = rbf_kernel(X)
+    similarity_matrix_supervised = np.zeros((len(labels), len(labels)))
+    for j in range(len(labels)):
+        for k in range(len(labels)):
+            if must_link[j, k] == 1:
+                similarity_matrix_supervised[j, k] = 1
+            if cannot_link[j, k] == 1:
+                similarity_matrix_supervised[j, k] = 0
+            else:
+                similarity_matrix_supervised[j, k] = similarity_matrix[j, k]
+    score = np.linalg.norm(similarity_matrix_supervised - similarity_matrix)
+    return score
+
+def nearest_prototype(x, prototypes):
+    """Given a sample x and a set of prototypes, returns the index of the nearest prototype
+
+    Args:
+        x (array): features of a sample
+        prototypes (2D array): data set containing the prototypes with their labels
+
+    Returns:
+        int : index of the nearest prototype
+    """
+    distance = np.zeros(len(prototypes))
+    for i in range(len(prototypes)):
+        distance[i] = np.linalg.norm(x - prototypes[i])
+    return np.argmin(distance)
+
+def score_semi_supervised(X):
+    """Computes the semi-supervised similarity score of a dataset
+
+    Args:
+        X (2D array): numpy array containing the data set with available labels in the last column
+
+    Returns:
+        float: The semi-supervised similarity score of the data set
+    """
+    labels = X[:,-1][np.newaxis].T
+    mask = ~np.isnan(labels)
+    mask = np.squeeze(mask)  # Ensure the boolean array is 1D
+    prototypes = X[mask, :]
+    labels_prototypes = prototypes[:,-1][np.newaxis].T
+    must_link = get_constraints(labels)[0]
+    prototypes = prototypes[:,:-1] # we remove the labels from the prototypes
+    X = X[:,:-1] # we remove the labels from the data
+    similarity_matrix = rbf_kernel(X) #The true similarity matrix
+    similarity_matrix_semi_supervised = np.zeros((len(X), len(X))) #The constructed similarity matrix with constraints
+    for i in range(len(X)):
+        NP_Xi = nearest_prototype(X[i], prototypes)
+        for j in range(len(X)):
+            NP_Xj = nearest_prototype(X[j], prototypes)
+            if labels_prototypes[NP_Xi] == labels_prototypes[NP_Xj] or must_link[i, j] == 1:
+                similarity_matrix_semi_supervised[i, j] = 1
+            else:
+                similarity_matrix_semi_supervised[i, j] = 0
+    score = np.linalg.norm(similarity_matrix_semi_supervised - similarity_matrix)
+    return score
