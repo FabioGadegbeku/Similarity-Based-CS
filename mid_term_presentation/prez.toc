@@ -1,5 +1,0 @@
-\beamer@sectionintoc {1}{Introduction}{3}{0}{1}
-\beamer@sectionintoc {2}{Laplacian Score}{7}{0}{2}
-\beamer@sectionintoc {3}{Constraint Scores 1 \& 4}{11}{0}{3}
-\beamer@sectionintoc {4}{Similarity Based Constraint Score}{15}{0}{4}
-\beamer@sectionintoc {5}{Results}{19}{0}{5}
