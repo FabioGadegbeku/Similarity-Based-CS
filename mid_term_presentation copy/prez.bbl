@@ -1,0 +1,130 @@
+% $ biblatex auxiliary file $
+% $ biblatex bbl format version 3.2 $
+% Do not modify the above lines!
+%
+% This is an auxiliary file used by the 'biblatex' package.
+% This file may safely be deleted. It will be recreated by
+% biber as required.
+%
+\begingroup
+\makeatletter
+\@ifundefined{ver@biblatex.sty}
+  {\@latex@error
+     {Missing 'biblatex' package}
+     {The bibliography requires the 'biblatex' package.}
+      \aftergroup\endinput}
+  {}
+\endgroup
+
+
+\refsection{0}
+  \datalist[entry]{nty/global//global/global}
+    \entry{kalakechConstraintScoresSemisupervised2011}{article}{}
+      \name{author}{4}{}{%
+        {{hash=1e5f80110e100525ebdc0ad848051416}{%
+           family={Kalakech},
+           familyi={K\bibinitperiod},
+           given={Mariam},
+           giveni={M\bibinitperiod}}}%
+        {{hash=8f49c8f793c324e15ecf12abdc91cb87}{%
+           family={Biela},
+           familyi={B\bibinitperiod},
+           given={Philippe},
+           giveni={P\bibinitperiod}}}%
+        {{hash=d250f064dbd0b4c60025176b96ffe6cd}{%
+           family={Macaire},
+           familyi={M\bibinitperiod},
+           given={Ludovic},
+           giveni={L\bibinitperiod}}}%
+        {{hash=762ea3f010c98855bd2231b50f705f09}{%
+           family={Hamad},
+           familyi={H\bibinitperiod},
+           given={Denis},
+           giveni={D\bibinitperiod}}}%
+      }
+      \strng{namehash}{3f429d33cbfdedcfced7baf648eb754e}
+      \strng{fullhash}{6e31bf8d088c93e16665af57fc199e33}
+      \strng{bibnamehash}{3f429d33cbfdedcfced7baf648eb754e}
+      \strng{authorbibnamehash}{3f429d33cbfdedcfced7baf648eb754e}
+      \strng{authornamehash}{3f429d33cbfdedcfced7baf648eb754e}
+      \strng{authorfullhash}{6e31bf8d088c93e16665af57fc199e33}
+      \field{sortinit}{K}
+      \field{sortinithash}{c02bf6bff1c488450c352b40f5d853ab}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{shorttitle}
+      \field{abstract}{Recent feature selection scores using pairwise constraints (must-link and cannot-link) have shown better performances than the unsupervised methods and comparable to the supervised ones. However, these scores use only the pairwise constraints and ignore the available information brought by the unlabeled data. Moreover, these constraint scores strongly depend on the given must-link and cannot-link subsets built by the user. In this paper, we address these problems and propose a new semi-supervised constraint score that uses both pairwise constraints and local properties of the unlabeled data. Experiments using Kendall's coefficient and accuracy rates, show that this new score is less sensitive to the given constraints than the previous scores while providing similar performances.}
+      \field{issn}{01678655}
+      \field{journaltitle}{Pattern Recognition Letters}
+      \field{langid}{english}
+      \field{month}{4}
+      \field{number}{5}
+      \field{shorttitle}{Constraint Scores for Semi-Supervised Feature Selection}
+      \field{title}{Constraint Scores for Semi-Supervised Feature Selection: {{A}} Comparative Study}
+      \field{urlday}{24}
+      \field{urlmonth}{9}
+      \field{urlyear}{2023}
+      \field{volume}{32}
+      \field{year}{2011}
+      \field{urldateera}{ce}
+      \field{pages}{656\bibrangedash 665}
+      \range{pages}{10}
+      \verb{doi}
+      \verb 10.1016/j.patrec.2010.12.014
+      \endverb
+      \verb{file}
+      \verb /Users/fabiogadegbeku/Zotero/storage/GKTJL5WB/Kalakech et al. - 2011 - Constraint scores for semi-supervised feature sele.pdf
+      \endverb
+    \endentry
+    \entry{salmiSimilaritybasedConstraintScore2020}{article}{}
+      \name{author}{3}{}{%
+        {{hash=a3f61c11aab643ecc7aa01cbf50164f4}{%
+           family={Salmi},
+           familyi={S\bibinitperiod},
+           given={Abderezak},
+           giveni={A\bibinitperiod}}}%
+        {{hash=8dd2a0eaa4ea71454526333bb37b9830}{%
+           family={Hammouche},
+           familyi={H\bibinitperiod},
+           given={Kamal},
+           giveni={K\bibinitperiod}}}%
+        {{hash=d250f064dbd0b4c60025176b96ffe6cd}{%
+           family={Macaire},
+           familyi={M\bibinitperiod},
+           given={Ludovic},
+           giveni={L\bibinitperiod}}}%
+      }
+      \strng{namehash}{e1e743ce68a45704b0298520b8ac4408}
+      \strng{fullhash}{e1e743ce68a45704b0298520b8ac4408}
+      \strng{bibnamehash}{e1e743ce68a45704b0298520b8ac4408}
+      \strng{authorbibnamehash}{e1e743ce68a45704b0298520b8ac4408}
+      \strng{authornamehash}{e1e743ce68a45704b0298520b8ac4408}
+      \strng{authorfullhash}{e1e743ce68a45704b0298520b8ac4408}
+      \field{sortinit}{S}
+      \field{sortinithash}{b164b07b29984b41daf1e85279fbc5ab}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{abstract}{To avoid the curse of dimensionality resulting from a large number of features, the most relevant features should be selected. Several scores involving mustlink and cannot-link constraints have been proposed to estimate the relevance of features. However, these constraint scores evaluate features one by one and ignore any correlations between features. In addition, they compute distances in the high-dimensional original feature space to evaluate the similarity between samples. So, they would be corrupted by the curse of dimensionality. To deal with these drawbacks, we propose a new constraint score based on a similarity matrix that is computed in the selected feature subspace and that makes it possible to evaluate the relevance of a feature subset at once. Experiments on benchmark databases demonstrate the improvement brought by the proposed constraint score in the context of both supervised and semi-supervised learnings.}
+      \field{issn}{09507051}
+      \field{journaltitle}{Knowledge-Based Systems}
+      \field{langid}{english}
+      \field{month}{12}
+      \field{title}{Similarity-Based Constraint Score for Feature Selection}
+      \field{urlday}{23}
+      \field{urlmonth}{9}
+      \field{urlyear}{2023}
+      \field{volume}{209}
+      \field{year}{2020}
+      \field{urldateera}{ce}
+      \field{pages}{106429}
+      \range{pages}{1}
+      \verb{doi}
+      \verb 10.1016/j.knosys.2020.106429
+      \endverb
+      \verb{file}
+      \verb /Users/fabiogadegbeku/Zotero/storage/3MBCQT3C/Salmi et al. - 2020 - Similarity-based constraint score for feature sele.pdf
+      \endverb
+    \endentry
+  \enddatalist
+\endrefsection
+\endinput
+

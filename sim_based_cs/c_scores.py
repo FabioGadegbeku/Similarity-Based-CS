@@ -2,6 +2,8 @@
 import numpy as np
 from sklearn.metrics.pairwise import rbf_kernel
 from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import train_test_split
+from sklearn.neighbors import KNeighborsClassifier as Knn
 def laplacian_score(x):
     """Computes the laplacian score of a dataset
 
@@ -11,11 +13,8 @@ def laplacian_score(x):
     Returns:
         laplacian_score : laplacian score of the data set
     """
-    # Center and normalize the data
-    scaler = StandardScaler()
-    scaler.fit_transform(x)
     # Compute the similarity matrix
-    simalarity_matrix = rbf_kernel(x)
+    simalarity_matrix = rbf_kernel(x,gamma=1)
     # Compute the degree matrix
     degree_matrix = np.diag(simalarity_matrix.sum(axis=1))
     # Compute the lapacien matrix
@@ -59,7 +58,7 @@ def generate_constraints(X, p):
     Returns:
         X : numpy array containing the data set with only p labels available for each class
     """
-
+    X = X.copy()
     #Get target column from X
     target_column = X[:,-1]
 
@@ -88,7 +87,6 @@ def constraint_score_1(x):
     Returns:
         constraint_score_1 : constraint score 1 of the data set
     """
-    # Get the constraints
     target = x[:, -1][np.newaxis].T
     x = x[:, :-1]
     must_link, cannot_link = get_constraints(target)
@@ -103,59 +101,22 @@ def constraint_score_1(x):
     constraint_score_1 = constraint_score_1_num / constraint_score_1_den
     return constraint_score_1
 
-
-def similarity_matrix_score(x,m):
-    """Computes the similarity matrix score of a dataset keeping the m first features
+def constraint_score_4(x):
+    """
 
     Args:
-        x : data set with available labels
-        m : number of features to keep
+        x (_type_): _description_
 
     Returns:
-        The similarity matrix score for each feature
+        _type_: _description_
     """
-    target = x[:, -1]
-    x = x[:, :-1]
-    # Center and normalize the data
-    scaler = StandardScaler()
-    scaler.fit_transform(x)
-    # Compute the similarity matrix for each feature
-    similarity_matrix_score =[]
-    #get the constraints
-    must_link, cannot_link = get_constraints(target)
-    for i in range(m+1,x.shape[1]-1):
-        similarity_matrix = (rbf_kernel(x[:,m:i].reshape(-1, 1)))
-        similarity_matrix_supervised = np.zeros((len(target), len(target)))
-        for j in range(len(target)):
-            for k in range(len(target)):
-                if must_link[j, k] == 1:
-                    similarity_matrix_supervised[j, k] = 1
-                if cannot_link[j, k] == 1:
-                    similarity_matrix_supervised[j, k] = 0
-                else:
-                    similarity_matrix_supervised[j, k] = similarity_matrix[j, k]
-        similarity_matrix_score.append(np.linalg.norm(similarity_matrix_supervised - similarity_matrix))
+    x_data = x[:,:-1]
+    ls = laplacian_score(x_data)
+    cs1 = constraint_score_1(x)
 
-    return similarity_matrix_score
+    return ls*cs1
 
-# def score_supervised(X):
-#     target = X[:,-1][np.newaxis].T
-#     X = X[:,:-1]
-#     must_link, cannot_link = get_constraints(target)
-#     similarity_matrix = rbf_kernel(X)
-#     similarity_matrix_supervised = np.zeros((len(target), len(target)))
-#     for j in range(len(target)):
-#         for k in range(len(target)):
-#             if must_link[j, k] == 1:
-#                 similarity_matrix_supervised[j, k] = 1
-#             if cannot_link[j, k] == 1:
-#                 similarity_matrix_supervised[j, k] = 0
-#             else:
-#                 similarity_matrix_supervised[j, k] = similarity_matrix[j, k]
-#     score = np.linalg.norm(similarity_matrix_supervised - similarity_matrix)
-#     return score
-
-def similarity_constraint_score(X,score,m):
+def semi_supervised_similarity_constraint_score(X,m):
     """Creates a subset of features of size m that maximizes the similarity matrix score (Greedy Algorithm)
 
     Args:
@@ -169,15 +130,12 @@ def similarity_constraint_score(X,score,m):
     target = X[:, -1][np.newaxis].T
     X = X[:, :-1]
     n = X.shape[1]
-    # Center and normalize the data
-    scaler = StandardScaler()
-    scaler.fit_transform(X)
     selected_features = []
     for j in range(m):
         similarity_matrix_score =[]
         if j == 0:
             for i in range(n):
-                similarity_matrix_score.append(score(np.concatenate((X[:,i][np.newaxis].T,target), axis=1)))
+                similarity_matrix_score.append(score_semi_supervised(np.concatenate((X[:,i][np.newaxis].T,target), axis=1)))
             feature_rank = np.argsort(similarity_matrix_score)
             selected_features.append(feature_rank[0])
             features = np.delete(X, feature_rank[1:], axis=1)
@@ -186,7 +144,42 @@ def similarity_constraint_score(X,score,m):
                 if i not in selected_features:
                     fi = np.concatenate((features,X[:,i][np.newaxis].T), axis=1)
                     fi = np.concatenate((fi,target), axis=1)
-                    similarity_matrix_score.append(score(fi))
+                    similarity_matrix_score.append(score_semi_supervised(fi))
+                else:
+                    similarity_matrix_score.append(np.inf)
+            feature_rank = np.argsort(similarity_matrix_score)
+            selected_features.append(feature_rank[0])
+            features = np.concatenate((features,X[:,feature_rank[0]][np.newaxis].T), axis=1)
+    return selected_features
+
+def supervised_similarity_constraint_score(X,m):
+    """Creates a subset of features of size m that maximizes the similarity matrix score (Greedy Algorithm)
+
+    Args:
+        X (2D array): numpy array containing the data set with available labels in the last column
+        m ( int ): number of features to keep
+
+    Returns:
+        int : The best subset of size m of features
+    """
+    target = X[:, -1][np.newaxis].T
+    X = X[:, :-1]
+    n = X.shape[1]
+    selected_features = []
+    for j in range(m):
+        similarity_matrix_score =[]
+        if j == 0:
+            for i in range(n):
+                similarity_matrix_score.append(score_supervised(np.concatenate((X[:,i][np.newaxis].T,target), axis=1)))
+            feature_rank = np.argsort(similarity_matrix_score)
+            selected_features.append(feature_rank[0])
+            features = np.delete(X, feature_rank[1:], axis=1)
+        else :
+            for i in range(n):
+                if i not in selected_features:
+                    fi = np.concatenate((features,X[:,i][np.newaxis].T), axis=1)
+                    fi = np.concatenate((fi,target), axis=1)
+                    similarity_matrix_score.append(score_supervised(fi))
                 else:
                     similarity_matrix_score.append(np.inf)
             feature_rank = np.argsort(similarity_matrix_score)
@@ -206,7 +199,7 @@ def score_supervised(X):
     labels = X[:,-1][np.newaxis].T
     X = X[:,:-1]
     must_link, cannot_link = get_constraints(labels)
-    similarity_matrix = rbf_kernel(X)
+    similarity_matrix = rbf_kernel(X,gamma=1)
     similarity_matrix_supervised = np.zeros((len(labels), len(labels)))
     for j in range(len(labels)):
         for k in range(len(labels)):
@@ -251,7 +244,7 @@ def score_semi_supervised(X):
     must_link = get_constraints(labels)[0]
     prototypes = prototypes[:,:-1] # we remove the labels from the prototypes
     X = X[:,:-1] # we remove the labels from the data
-    similarity_matrix = rbf_kernel(X) #The true similarity matrix
+    similarity_matrix = rbf_kernel(X,gamma= 1) #The true similarity matrix
     similarity_matrix_semi_supervised = np.zeros((len(X), len(X))) #The constructed similarity matrix with constraints
     for i in range(len(X)):
         NP_Xi = nearest_prototype(X[i], prototypes)
@@ -263,3 +256,141 @@ def score_semi_supervised(X):
                 similarity_matrix_semi_supervised[i, j] = 0
     score = np.linalg.norm(similarity_matrix_semi_supervised - similarity_matrix)
     return score
+
+
+def get_accuracy(score,train,train_constrained,test):
+    """Plots the accuracy of a Knn classifier for different number of features for a given score
+
+    Args:
+        score (function or class instance): score used to select the features
+        n_iter (int): number of iterations to compute the accuracy (the final accuracy is the average of the n_iter accuracies)
+        train (2D array): numpy array containing the training data set with available labels in the last column
+        test (2D array ): numpy array containing the test data set with labels in the last column
+        p (int): number of labels to keep for each class
+
+    Returns:
+        numpy array : The accuracy of the Knn classifier for different number of features
+    """
+    n = np.shape(train)[1]
+    knn = Knn(n_neighbors=1)
+    X_train = train[:,:-1]
+    y_train = train[:,-1]
+    X_test = test[:,:-1]
+    y_test = test[:,-1]
+
+    if score == laplacian_score :
+        features = np.argsort(score(X_train))
+
+    elif score == semi_supervised_similarity_constraint_score or score == supervised_similarity_constraint_score:
+        features = np.argsort(score(train_constrained,n-1))
+
+    else :
+        features = np.argsort(score(train_constrained))
+
+    Accuracy = np.zeros(n-1)
+
+    for i in range(1,n):
+        # i features to keep
+        X_train_fs = np.delete(X_train, features[i:], axis=1)
+        X_test_fs = np.delete(X_test, features[i:], axis=1)
+
+        #scale the data
+        scaler = StandardScaler()
+        X_train_fs = scaler.fit_transform(X_train_fs)
+        X_test_fs = scaler.transform(X_test_fs)
+
+        # Fit the Knn classifier
+        knn.fit(X_train_fs, y_train)
+        y_pred = knn.predict(X_test_fs)
+
+        # Compute the accuracy
+        Accuracy[i-1] = np.mean(y_pred == y_test)
+
+    return Accuracy
+
+def plot_accuracy(scores,train,test,rep,p):
+
+    n = np.shape(train)[1]
+    All_Accuracy = np.zeros((len(scores),rep,n-1))
+    for i in range(rep):
+        train_constrained = generate_constraints(train,p)
+        for score in scores:
+            acc = get_accuracy(score,train,train_constrained,test)
+            All_Accuracy[scores.index(score),i] = acc
+    return np.mean(All_Accuracy,axis=1)
+
+
+
+def auc_score(acc):
+    return np.trapz(acc)/len(acc)
+
+def split_dataset(X):
+    """Splits the dataset into a training and test set with half of the labels available for each class
+
+    Args:
+        X (2D numpy array): numpy array containing the data set with labels in the last column
+
+    Returns:
+        (2D array, 2D array) : The training and test sets
+    """
+    # Get the unique classes from the last column
+    classes = np.unique(X[:, -1])
+
+    # Initialize lists to store indices of each class
+    class_indices = {cls: [] for cls in classes}
+
+    # Group indices of each class
+    for idx, cls in enumerate(X[:, -1]):
+        class_indices[cls].append(idx)
+
+    # Initialize lists to store indices for training and test sets
+    train_indices = []
+    test_indices = []
+
+    # Split each class into training and test sets
+    for cls in classes:
+        # Shuffle indices of the current class
+        np.random.shuffle(class_indices[cls])
+
+        # Calculate the split index (half of the class size)
+        split_idx = len(class_indices[cls]) // 2
+
+        # Add half of the indices to the training set
+        train_indices.extend(class_indices[cls][:split_idx])
+
+        # Add the other half of the indices to the test set
+        test_indices.extend(class_indices[cls][split_idx:])
+
+    # Create training and test sets
+    X_train = X[train_indices]
+    X_test = X[test_indices]
+
+    return X_train, X_test
+
+def rank_matrix(scores,X,rep,p):
+    """Computes the rank matrix of a score for a given dataset
+
+    Args:
+        scores (function or class instance): list of scores used to select the features
+        X (2D array): numpy array containing the data set with available labels in the last column
+        rep (int): number of iterations to compute the rank matrix
+
+    Returns:
+        3 numpy array : The rank matrix of the scores
+    """
+    n = np.shape(X)[1]
+    X_data = X[:,:-1]
+    rank_matrix = np.zeros((len(scores),rep,n-1))
+    for i in range(rep):
+        X_constraints = generate_constraints(X,p)
+        for score in scores:
+            if score == laplacian_score :
+                rank_matrix[scores.index(score),i] = np.argsort(score(X_data))
+            elif score == semi_supervised_similarity_constraint_score or score == supervised_similarity_constraint_score:
+                rank_matrix[scores.index(score),i] = np.argsort(score(X_constraints,n-1))
+            else :
+                rank_matrix[scores.index(score),i] = np.argsort(score(X_constraints))
+    return rank_matrix
+
+
+
