@@ -1,0 +1,302 @@
+\documentclass{beamer}
+\usetheme{Madrid}
+\usecolortheme{whale}
+\usepackage{biblatex}
+\addbibresource{similaritybasedcs.bib}
+% Customize the color theme
+\definecolor{lightblue}{RGB}{70, 70, 255}
+\setbeamercolor{structure}{fg=lightblue}
+\setbeamercolor{section in toc}{fg=black}
+\usepackage{amsmath}
+\usepackage[ruled,vlined]{algorithm2e}
+\usepackage{graphicx}
+\usepackage{subcaption}
+
+
+
+
+% Title Slide
+\title{\textbf{Similarity Based Constraint Score For Feature Selection}}
+\subtitle{Mid-term Research Project Presentation}
+
+\author{Gadegbeku Fabio}
+\institute{\normalsize{Supervised By : Dr. Ludovic Macaire}}
+
+\date{\today}
+
+\begin{document}
+
+% Custom footline for the whole presentation
+\setbeamertemplate{footline}{
+  \leavevmode%
+  \hbox{%
+  \begin{beamercolorbox}[wd=.25\paperwidth,ht=2.25ex,dp=1ex,center]{author in head/foot}%
+    \usebeamerfont{author in head/foot}\insertshortauthor
+  \end{beamercolorbox}%
+  \begin{beamercolorbox}[wd=.5\paperwidth,ht=2.25ex,dp=1ex,center]{title in head/foot}%
+    \usebeamerfont{title in head/foot}\insertshorttitle
+  \end{beamercolorbox}%
+  \begin{beamercolorbox}[wd=.25\paperwidth,ht=2.25ex,dp=1ex,right]{title in head/foot}%
+    \usebeamerfont{title in head/foot}\insertframenumber{} / \inserttotalframenumber\hspace*{2ex}
+  \end{beamercolorbox}}%
+  \vskip0pt%
+}
+
+% Title Page
+\begin{frame}
+  \titlepage
+  \begin{center}
+    \raisebox{-0.5\height}{\includegraphics[width=0.25\textwidth]{centralelillelogo.png}}\hspace{0.2cm}
+    \raisebox{-0.5\height}{\includegraphics[width=0.25\textwidth]{univlillelogo.png}}\hspace{0.2cm}
+    \raisebox{-0.5\height}{\includegraphics[width=0.25\textwidth]{cristallogo.jpg}}\par
+  \end{center}
+\end{frame}
+
+% Table Of Contents
+\begin{frame}{Table of Contents}
+  \tableofcontents
+\end{frame}
+
+% Introduction
+\section{Introduction}
+
+\begin{frame}{Introduction}
+    \begin{block}{Semi Supervised Learning}
+        \begin{itemize}
+            \item We can define \textbf{must link} and \textbf{cannot link} constraints
+                \begin{itemize}
+                    \item must link : When two samples belong to the same class
+                    \item cannot link : When two samples belong to different classes
+                \end{itemize}
+            \item \textbf{Constraint Scores} to evaluate how well each feature matches the constraints
+        \end{itemize}
+    \end{block}
+\end{frame}
+
+\begin{frame}{Introduction}
+    \begin{figure}
+    \begin{subfigure}[b]{0.45\textwidth}
+        \includegraphics[width=\textwidth]{unsup.pdf}
+        \caption{Unsupervised}
+        \label{fig:image1}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.45\textwidth}
+        \includegraphics[width=\textwidth]{ssupervised.pdf}
+        \caption{Semi Supervised}
+        \label{fig:image2}
+    \end{subfigure}
+    \label{fig:both_images}
+\end{figure}
+
+\end{frame}
+
+\begin{frame}{Introduction}
+    \begin{block}{Schema}
+        \begin{itemize}
+            \item Read and understand the papers on the subjects
+            \item Implement an unsupervised score and two semi supervised scores described in \cite{kalakechConstraintScoresSemisupervised2011}
+            \item Compare results on these scores on multiple datasets
+        \end{itemize}
+    \end{block}
+
+    \footfullcite{kalakechConstraintScoresSemisupervised2011}
+\end{frame}
+
+% Laplacian Score
+\section{Laplacian Score}
+\begin{frame}{Laplacian Score (Unsupervised)}
+    \begin{block}{Our n samples of d features}
+     \[ X =
+        \begin{bmatrix}
+        x_{11} & \dots & x_{1r} & \dots & x_{1d} \\
+        \vdots & \ddots & \vdots & \ddots & \vdots \\
+        x_{i1} & \dots & x_{ir} & \dots & x_{id} \\
+        \vdots & \ddots & \vdots & \ddots & \vdots \\
+        x_{n1} & \dots & x_{nr} & \dots & x_{nd} \\
+        \end{bmatrix}
+        \]
+    \end{block}
+
+    \begin{block}{A sample of our Data}
+        \[ x_i = (x_{i1}, \dots, x_{ir}, \dots, x_{id})^T \in \mathbb{R}^d \]
+    \end{block}
+
+    \begin{block}{A feature vector}
+        \[ f_{r} = (x_{1r}, \dots, x_{ir}, \dots, x_{nr})^T \in \mathbb{R}^n \]
+    \end{block}
+\end{frame}
+
+\begin{frame}{Laplacian Score (Unsupervised)}
+
+    \begin{block}{Similarity Matrix}
+        \[ W = \begin{bmatrix}
+            1 & w_{12} & \dots & w_{1n} \\
+            w_{21} & 1 & \dots & w_{2n} \\
+            \vdots & \vdots & \ddots & \vdots \\
+            w_{n1} & w_{n2} & \dots & 1 \\
+        \end{bmatrix} \]
+    \end{block}
+
+    \begin{block}{Similarity between two samples}
+        \[ w_{ij} = S(x_i,x_j) \]
+        \\
+       For example :  \[ S(x_i,x_j) = \exp(-\frac{||x_i - x_j||^2}{2\sigma^2}) \]
+    \end{block}
+\end{frame}
+
+\begin{frame}{Laplacian Score (Unsupervised)}
+
+    \begin{block}{Degree Matrix}
+        \[ D = \begin{bmatrix}
+            d_{11} & \dots & 0 \\
+            \vdots & \ddots & \vdots \\
+            0 & \dots & d_{nn} \\
+        \end{bmatrix} \]
+        \\
+        Where : \[ d_{ii} = \sum_{j=1}^n w_{ij} \]
+    \end{block}
+\end{frame}
+
+\begin{frame}{Laplacian Score (Unsupervised)}
+\begin{block}{Laplacian Matrix}
+    \[ L = D - W \]
+\end{block}
+
+\begin{block}{Laplacian Score of feature r}
+    \[
+L_r = \frac{\sum_{i=1}^{n} \sum_{j=1}^{n} (x_{ir} - x_{jr})^2 s_{ij}}{\sum_{i=1}^{n} (x_{ir} - \bar{f_{r}}) p_{i}}
+\]
+\\ Where :  \[ pi = \frac{d_i}{\sum_{k=1}^{n}{d_k}} \]
+\\ And we have :
+    \[ L_r = \frac{f_r^T L f_r}{f_r^T D f_r} \]
+\end{block}
+\end{frame}
+
+% Constraint Score 1
+\section{Constraint Scores A \& B}
+\begin{frame}{Constraint Score A (Semi Supervised)}
+    \begin{block}{Constraints}
+        \[
+\mathcal{M} = \{(x_i, x_j) \in X \times X \,|\, \text{such that } x_i \text{ and } x_j \text{ belong to the same class}\}
+\]
+
+\[
+\mathcal{C} = \{(x_i, x_j) \in X \times X \,|\, \text{such that } x_i \text{ and } x_j \text{ belong to different classes}\}
+\]
+    \end{block}
+
+\begin{block}{Binary Constraint Matrices}
+    \[
+w_{ij}^{\mathcal{M}} =
+\begin{cases}
+  1 & \text{if } (x_i, x_j) \in \mathcal{M} \text{ or } (x_j, x_i) \in \mathcal{M}\\
+  0 & \text{else}
+\end{cases}
+\]
+\\
+
+\[
+w_{ij}^{\mathcal{C}} =
+\begin{cases}
+  1 & \text{if } (x_i, x_j) \in \mathcal{C} \text{ or } (x_j, x_i) \in \mathcal{C} \\
+  0 & \text{else}
+\end{cases}
+\]
+
+\end{block}
+
+\end{frame}
+
+\begin{frame}{Constraint Score A (Semi Supervised)}
+    \begin{block}{Minimize}
+        \[
+\sum_{i=1}^{n} \sum_{j=1}^n (x_{ir} - x_{jr})^2 w_{ij}^{\mathcal{M}}
+\]
+    \end{block}
+
+    \begin{block}{Maximize}
+        \[
+\sum_{i=1}^{n} \sum_{j=1}^n (x_{ir} - x_{jr})^2 w_{ij}^{\mathcal{C}}
+\]
+
+    \end{block}
+\end{frame}
+
+\begin{frame}{Constraint Score A (Semi Supervised)}
+    \begin{block}{Laplacian Matrix with constraints}
+        \[
+L^{\mathcal{M}} = D^{\mathcal{M}} - W^{\mathcal{M}} \quad \text{and} \quad L^{\mathcal{C}} = D^{\mathcal{C}} - C^{\mathcal{C}}
+\]
+Where :
+\[
+D_{ii}^{\mathcal{M}} = \sum_{j=1}^n w_{ij}^{\mathcal{M}} \quad D_{ii}^{\mathcal{C}} = \sum_{j=1}^n w_{ij}^{\mathcal{C}}
+\]
+
+    \end{block}
+
+    \begin{block}{Constraint Score A of feature r}
+        \[
+SC_{r}^A = \frac{\sum_{i=1}^n \sum_{j=1}^n (x_{ir} - x_{jr})^2 w_{ij}^{\mathcal{M}}}{\sum_{i=1}^n \sum_{j=1}^n (x_{ir} - x_{jr})^2 w_{ij}^{\mathcal{C}}} = \frac{f_{r}^T L^{\mathcal{M}} f_{r}^T}{f_{r}^T L^{\mathcal{C}} f_{r}^T}
+\]
+    \end{block}
+\end{frame}
+
+\begin{frame}{Constraint Score B (Semi Supervised)}
+    \begin{block}{Constraint Score B of feature r}
+        \[
+        SC^B_r = \frac{f_r^{T}Lf_r}{f_r^{T}Df_r} \cdot \frac{{f_r}^{T}L^{\mathcal{M}}f_r}{{f_r}^{T}L^{\mathcal{C}}f_r} = SL_r \cdot SC^A_r
+        \]
+    \end{block}
+\end{frame}
+
+\section{Experimental Results}
+\begin{frame}{ Experimental Results}
+    \begin{block}{Wine Database}
+        \begin{itemize}
+            \item 178 samples characterized by 13 features (n=178, d=13)
+            \item 3 classes (k=3)
+                \begin{itemize}
+                    \item 59 class 1
+                    \item 71 class 2
+                    \item 48 class 3
+                \end{itemize}
+            \item We select 30, 36, and 24 instances from each class to constitute the training set.
+            \item 1-NN classifier to measure accuracy
+            \item 9 labels avaiable (3 prototypes per class)
+                \begin{itemize}
+                    \item $ k\times p\times(p-1) $ Must link constraints
+                    \item $ k\times(k-1)\times p $ Cannot link constraints
+                \end{itemize}
+        \end{itemize}
+    \end{block}
+\end{frame}
+\begin{frame}{Experimental Results}
+    \begin{center}
+    \includegraphics[height=0.8\textheight]{../Images/allscoresAB.png}
+    \end{center}
+\end{frame}
+
+\begin{frame}{Experimental Results}
+    \begin{center}
+\begin{figure}
+    \includegraphics[height=0.75\textheight]{../Images/C62.png}
+    \caption{ For 6 labels available per class}
+\end{figure}
+\end{center}
+\end{frame}
+
+\begin{frame}{Conclusion}
+    \begin{block}{Perspectives}
+        \begin{itemize}
+            \item Measure different criteria (ex : sensitivity to constraints)
+            \item Implement the Similarity Based Constraint Score (SBCS) as described by \cite{salmiSimilaritybasedConstraintScore2020}
+            \item Compare results of the SBCS with the previous scores
+            \item Improve the SBCS by using constraints directly instead of available labels to generate the constraints
+        \end{itemize}
+    \end{block}
+    \footfullcite{salmiSimilaritybasedConstraintScore2020}
+\end{frame}
+
+
+\end{document}
