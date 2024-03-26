@@ -19,7 +19,7 @@ This project addresses the curse of dimensionality in feature selection methods,
 
 - To use the implementations of these scores clone the repository and the scores can be found in the c_scores.py file inside the sim_based_cs folder.
 
-_ In c_scores.py you'll also find functions for preprocessing your data, plotting results, and computing the rank matrix.
+- In c_scores.py you'll also find functions for preprocessing your data, plotting results, and computing the rank matrix.
   
 - In the notebook you can find the results obtained by my implementations.
 
