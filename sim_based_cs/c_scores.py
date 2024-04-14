@@ -193,6 +193,31 @@ def constraint_score_2(x,gamma=1):
 
     return constraint_score_2
 
+# Function used to cumpute the SIMILARITY MATRIX KNN used in the constraint score 3
+def similarity_matrix_knn(X,gamma,n_neighbors):
+    """Computes the similarity matrix of a dataset using the Knn algorithm
+
+    Args:
+        X (2D array): numpy array containing the data set with available labels in the last column
+        gamma (float): parameter of matrix
+        n_neighbors (int): number of neighbors to consider
+
+    Returns:
+        2D array : The similarity matrix of the data set
+    """
+    must_link,_ = get_constraints(X)
+    n = len(X)
+    similarity_matrix = np.zeros((n,n))
+    X = X[:,:-1]
+    for i in range(n):
+        nearest_neighbors = np.argsort(np.linalg.norm(X - X[i], axis=1))[:n_neighbors]
+        for j in range(n):
+            if must_link[i,j] == 1:
+                similarity_matrix[i,j] = gamma
+            elif j in nearest_neighbors:
+                similarity_matrix[i,j] = 1
+    return similarity_matrix
+
 # Constraint Score 3
 def constraint_score_3(X,gamma=100,n_neighbors=5):
     """Computes the constraint score 3 of a dataset
@@ -252,6 +277,26 @@ def nearest_prototype(x, prototypes):
     distances = np.linalg.norm(x - prototypes, axis=1)
     return np.argmin(distances)
 
+# Fucntion to get the similarity matrix in a semi supervised setting
+def similarity_matrix_semi_supervised(X):
+    labels = X[:,-1][np.newaxis].T
+    mask = ~np.isnan(labels)
+    mask = np.squeeze(mask)  # Ensure the boolean array is 1D
+    prototypes = X[mask, :]
+    labels_prototypes = prototypes[:,-1][np.newaxis].T
+    must_link = get_constraints(labels)[0]
+    prototypes = prototypes[:,:-1] # we remove the labels from the prototypes
+    X = X[:,:-1] # we remove the labels from the data
+    nearest_prototypes = np.array([nearest_prototype(x, prototypes) for x in X])
+    labels_matrix = labels_prototypes[nearest_prototypes]
+
+    similarity_matrix_semi_supervised = np.zeros((len(X), len(X)))
+    for i in range(len(X)):
+        for j in range(len(X)):
+            if labels_matrix[i] == labels_matrix[j]:
+                similarity_matrix_semi_supervised[i,j] = 1
+    return similarity_matrix_semi_supervised
+
 # Function used by the semi_supervised_similarity_constraint_score to compute the score of each subset of features
 def score_semi_supervised(X):
     """Computes the semi-supervised similarity score of a dataset
@@ -262,19 +307,9 @@ def score_semi_supervised(X):
     Returns:
         float: The semi-supervised similarity score of the data set
     """
-    labels = X[:,-1][np.newaxis].T
-    mask = ~np.isnan(labels)
-    mask = np.squeeze(mask)  # Ensure the boolean array is 1D
-    prototypes = X[mask, :]
-    labels_prototypes = prototypes[:,-1][np.newaxis].T
-    must_link = get_constraints(labels)[0]
-    prototypes = prototypes[:,:-1] # we remove the labels from the prototypes
-    X = X[:,:-1] # we remove the labels from the data
-    similarity_matrix = rbf_kernel(X,gamma= 1) #The true similarity matrix
-    nearest_prototypes = np.array([nearest_prototype(x, prototypes) for x in X])
-    labels_matrix = labels_prototypes[nearest_prototypes]
-    similarity_matrix_semi_supervised = ((labels_matrix[:, np.newaxis] == labels_matrix[np.newaxis, :]) | (must_link == 1)).astype(int)
-    score = np.linalg.norm(similarity_matrix_semi_supervised - similarity_matrix)
+    similarity_matrix = rbf_kernel(X[:,:-1],gamma=1)
+    similarity_matrix_ss = similarity_matrix_semi_supervised(X)
+    score = np.linalg.norm(similarity_matrix_ss - similarity_matrix)
     return score
 
 # SEMI SUPERVISED SIMILARITY CONSTRAINT SCORE (epsSS)
@@ -376,30 +411,6 @@ def supervised_similarity_constraint_score(X,m):
             features = np.concatenate((features,X[:,feature_rank[0]][np.newaxis].T), axis=1)
     return selected_features
 
-# Function used to cumpute the SIMILARITY MATRIX KNN
-def similarity_matrix_knn(X,gamma,n_neighbors):
-    """Computes the similarity matrix of a dataset using the Knn algorithm
-
-    Args:
-        X (2D array): numpy array containing the data set with available labels in the last column
-        gamma (float): parameter of matrix
-        n_neighbors (int): number of neighbors to consider
-
-    Returns:
-        2D array : The similarity matrix of the data set
-    """
-    must_link,_ = get_constraints(X)
-    n = len(X)
-    similarity_matrix = np.zeros((n,n))
-    X = X[:,:-1]
-    for i in range(n):
-        nearest_neighbors = np.argsort(np.linalg.norm(X - X[i], axis=1))[:n_neighbors]
-        for j in range(n):
-            if must_link[i,j] == 1:
-                similarity_matrix[i,j] = gamma
-            elif j in nearest_neighbors:
-                similarity_matrix[i,j] = 1
-    return similarity_matrix
 
  ### ----------------------------------------------------- PLOT YOUR RESULTS ------------------------------------------------ ###
 
@@ -564,3 +575,74 @@ def kendall_coefficient(R):
     kendall_coeff = (12 * delta)/(p**2 * (d**3 - d) - p * tau)
 
     return kendall_coeff
+
+def correct_number_must_link(X,method,p):
+    """_summary_
+
+    Args:
+    X (2D array): Data set with labels
+    method (string): method to deduce new constraints
+    p (int): number of labels to keep for each class
+
+    Returns:
+    correct_ratio (float): ratio of correct predicted must link
+    correct_nml_ratio (float): ratio of correct predicted must link among the true must link
+    standard_ratio (float): ratio of standard must link in the true must link (no prediction)
+    """
+
+    X_constraints = generate_constraints(X,p)
+    all_must_link = get_constraints(X)[0]
+    if method == 'nearest prototype':
+        similarity_matrix_ss = similarity_matrix_semi_supervised(X_constraints)
+        must_link = get_constraints(X_constraints)[0]
+
+        standard_must_link_number = np.sum(must_link)
+        true_number_must_link = np.sum(all_must_link)
+
+        correct_number_must_link = 0
+        # get the number of true predicted must link
+        for i in range(len(X)):
+            for j in range(len(X)):
+                if similarity_matrix_ss[i,j] == 1 and all_must_link[i,j] == 1:
+                    correct_number_must_link += 1
+        # get the number of false predicted must link
+        false_number_must_link = 0
+        for i in range(len(X)):
+            for j in range(len(X)):
+                if similarity_matrix_ss[i,j] == 1 and all_must_link[i,j] == 0:
+                    false_number_must_link += 1
+
+        # get the number of true predicted cannot link
+        correct_ratio = correct_number_must_link/(correct_number_must_link+false_number_must_link)
+        correct_nml_ratio = correct_number_must_link/true_number_must_link
+        standard_ratio = standard_must_link_number/true_number_must_link
+        return correct_ratio,correct_nml_ratio,standard_ratio
+
+    elif method == 'knn':
+        similarity_matrix_nn = similarity_matrix_knn(X_constraints,1,5)
+        must_link = get_constraints(X_constraints)[0]
+        standard_must_link_number = np.sum(must_link)
+
+        true_number_must_link = np.sum(all_must_link)
+        correct_number_must_link = 0
+        # get the number of true predicted must link
+        for i in range(len(X)):
+            for j in range(len(X)):
+                if similarity_matrix_nn[i,j] == 1 and all_must_link[i,j] == 1:
+                    correct_number_must_link += 1
+        # get the number of false predicted must link
+        false_number_must_link = 0
+        for i in range(len(X)):
+            for j in range(len(X)):
+                if similarity_matrix_nn[i,j] == 1 and must_link[i,j] == 0:
+                    false_number_must_link += 1
+        # get the number of true predicted cannot link
+        correct_ratio = correct_number_must_link/(correct_number_must_link+false_number_must_link)
+        correct_nml_ratio = correct_number_must_link/true_number_must_link
+        standard_ratio = standard_must_link_number/true_number_must_link
+
+        return correct_ratio,correct_nml_ratio,standard_ratio
+
+
+
+
